@@ -1,0 +1,69 @@
+:root {
+  --bg: #111; --card: #1e1e1e; --line: #333; --fg: #f2f2f2; --dim: #9a9a9a;
+  --accent: #4ea1ff; --buzz: #e5484d; --right: #2fa84f; --wrong: #c94040; --warn: #e5a00d;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 18px/1.45 system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+
+.screen { height: 100dvh; display: flex; flex-direction: column; }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.bar h1 { font-size: 20px; margin: 0 4px; }
+.bar .title { flex: 1; text-align: center; font-weight: 600; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar > span { width: 48px; }
+.icon { width: 48px; height: 48px; font-size: 22px; background: none; border: none; color: var(--fg); border-radius: 8px; }
+.icon:active { background: var(--card); }
+
+.tally { display: flex; justify-content: space-around; padding: 8px 4px; background: var(--card); font-size: 14px; color: var(--dim); text-align: center; }
+.tally b { display: block; font-size: 20px; color: var(--fg); }
+.last { padding: 6px 16px; font-size: 14px; color: var(--dim); display: flex; justify-content: space-between; align-items: center; }
+.last button { background: none; border: 1px solid var(--line); color: var(--accent); border-radius: 6px; padding: 6px 12px; font: inherit; }
+
+.scroll { flex: 1; overflow-y: auto; padding: 12px 16px 24px; }
+h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); margin: 20px 0 8px; }
+.dim { color: var(--dim); }
+
+.qtext { font-size: 22px; line-height: 1.5; margin: 4px 0 16px; min-height: 2em; }
+.qtext .guide { color: var(--dim); font-size: .8em; }
+#answerPanel { border-top: 1px solid var(--line); padding-top: 12px; }
+.answer { font-size: 28px; font-weight: 700; margin: 4px 0 8px; color: var(--accent); }
+#answerDirectives, .note { font-size: 16px; margin-top: 6px; }
+
+.bottom { padding: 8px 12px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+.row { display: flex; gap: 10px; margin-bottom: 10px; }
+.row .btn { flex: 1; }
+.btn { display: block; width: 100%; min-height: 56px; border-radius: 12px; border: none; font: 600 20px system-ui, sans-serif; color: var(--fg); background: var(--card); text-align: center; padding: 14px; margin: 8px 0; }
+.btn.primary { background: var(--accent); color: #000; }
+.btn.big { min-height: 96px; font-size: 30px; margin: 0; }
+.btn.buzz { background: var(--buzz); color: #fff; }
+.btn.secondary { border: 1px solid var(--line); }
+.btn.danger { color: var(--wrong); }
+.btn:disabled { opacity: .4; }
+.btn.grade { min-height: 64px; margin: 0; border: 2px solid var(--line); }
+#rightBtn.selected { background: var(--right); border-color: var(--right); }
+#wrongBtn.selected { background: var(--wrong); border-color: var(--wrong); }
+.file { cursor: pointer; }
+
+.list { list-style: none; padding: 0; margin: 0; }
+.list li { display: flex; align-items: center; gap: 8px; background: var(--card); border-radius: 10px; margin: 8px 0; padding: 4px 4px 4px 14px; }
+.list li.current { outline: 2px solid var(--accent); }
+.list .grow { flex: 1; padding: 10px 0; }
+.list small { display: block; color: var(--dim); }
+.list button { min-width: 48px; min-height: 48px; background: none; border: none; color: var(--fg); font-size: 18px; border-radius: 8px; }
+.missed li { display: block; padding: 12px 14px; }
+.missed .meta { font-size: 13px; color: var(--dim); }
+.missed .q { font-size: 16px; margin: 6px 0; }
+.missed .a { font-weight: 700; color: var(--accent); }
+
+.warn { background: #3a2a00; border: 1px solid var(--warn); border-radius: 10px; padding: 12px; margin: 10px 0; }
+.warn ul { margin: 6px 0; padding-left: 20px; font-size: 15px; }
+.ok { background: #0f2a17; border: 1px solid var(--right); border-radius: 10px; padding: 12px; margin: 10px 0; }
+
+.stats { width: 100%; border-collapse: collapse; font-size: 15px; }
+.stats th, .stats td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+.stats th:first-child, .stats td:first-child { text-align: left; }
+
+label { display: block; margin: 16px 0 6px; color: var(--dim); }
+select, input[type=range] { width: 100%; }
+select { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }

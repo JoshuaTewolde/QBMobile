@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<title>QB Practice</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="src/app.js"></script>
+</head>
+<body>
+
+<!-- Home -->
+<section id="home" class="screen">
+  <header class="bar"><h1>QB Practice</h1><button id="openSettings" class="icon" aria-label="Settings">⚙</button></header>
+  <div class="tally" data-tally></div>
+  <main class="scroll">
+    <h2>Packets</h2>
+    <ul id="packetList" class="list"></ul>
+    <p id="noPackets" class="dim">No packets yet. Add a packet PDF to start.</p>
+    <label class="btn secondary file">Add packet PDF<input id="fileInput" type="file" accept="application/pdf,.pdf" hidden></label>
+    <div id="importStatus"></div>
+    <h2>Review</h2>
+    <button id="openMissed" class="btn secondary">Missed questions &amp; category stats</button>
+    <button id="resetScores" class="btn secondary danger">Reset scores</button>
+  </main>
+  <footer class="bottom"><button id="continueBtn" class="btn primary">Continue</button></footer>
+</section>
+
+<!-- Question -->
+<section id="question" class="screen" hidden>
+  <header class="bar">
+    <button id="backHome" class="icon" aria-label="Back">←</button>
+    <div id="qTitle" class="title"></div>
+    <button id="pauseBtn" class="icon" aria-label="Pause">❚❚</button>
+  </header>
+  <div class="tally" data-tally></div>
+  <div id="lastResult" class="last" hidden></div>
+  <main class="scroll" id="qScroll">
+    <p id="qText" class="qtext"></p>
+    <div id="answerPanel" hidden>
+      <div id="answerCat" class="dim"></div>
+      <div id="answerPrimary" class="answer"></div>
+      <div id="answerDirectives" class="dim"></div>
+      <div id="answerNote" class="dim note"></div>
+    </div>
+  </main>
+  <footer class="bottom">
+    <div id="gradeRow" class="row" hidden>
+      <button id="rightBtn" class="btn grade">Right</button>
+      <button id="wrongBtn" class="btn grade">Wrong</button>
+    </div>
+    <button id="mainBtn" class="btn primary big">Buzz</button>
+  </footer>
+</section>
+
+<!-- Missed questions -->
+<section id="missed" class="screen" hidden>
+  <header class="bar"><button class="icon" data-home aria-label="Back">←</button><div class="title">Review</div><span></span></header>
+  <main class="scroll">
+    <h2>By category</h2>
+    <table id="catStats" class="stats"></table>
+    <h2>Missed questions</h2>
+    <p id="noMissed" class="dim">Nothing missed yet.</p>
+    <ul id="missedList" class="list missed"></ul>
+  </main>
+</section>
+
+<!-- Settings -->
+<section id="settings" class="screen" hidden>
+  <header class="bar"><button class="icon" data-home aria-label="Back">←</button><div class="title">Settings</div><span></span></header>
+  <main class="scroll">
+    <label for="voiceSelect">Voice</label>
+    <select id="voiceSelect"></select>
+    <label for="rateInput">Reading speed: <span id="rateLabel"></span></label>
+    <input id="rateInput" type="range" min="0.6" max="2" step="0.1">
+    <button id="testVoice" class="btn secondary">Test voice</button>
+    <p class="dim">The speed slider also works mid-question; it applies from the next sentence.</p>
+  </main>
+</section>
+
+</body>
+</html>
