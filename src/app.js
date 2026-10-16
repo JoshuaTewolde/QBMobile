@@ -374,3 +374,9 @@ document.addEventListener('visibilitychange', () => {
 if (!reader.supported) alert('This browser has no speech synthesis. Reading aloud will not work.');
 globalThis.speechSynthesis?.addEventListener('voiceschanged', () => { if (!$('settings').hidden) renderSettings(); });
 show('home');
+
+// ---------- offline ----------
+// The service worker caches the app for offline use (needs HTTPS or localhost).
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(err => console.warn('service worker', err));
+// Ask the browser not to evict saved packets and scores when storage runs low.
+navigator.storage?.persist?.().catch(() => {});

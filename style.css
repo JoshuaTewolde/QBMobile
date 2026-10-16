@@ -35,7 +35,7 @@ h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: v
 .row .btn { flex: 1; }
 .btn { display: block; width: 100%; min-height: 56px; border-radius: 12px; border: none; font: 600 20px system-ui, sans-serif; color: var(--fg); background: var(--card); text-align: center; padding: 14px; margin: 8px 0; }
 .btn.primary { background: var(--accent); color: #000; }
-.btn.big { min-height: 96px; font-size: 30px; margin: 0; }
+.btn.big { min-height: 180px; font-size: 44px; margin: 0; border-radius: 16px; }
 .btn.buzz { background: var(--buzz); color: #fff; }
 .btn.secondary { border: 1px solid var(--line); }
 .btn.danger { color: var(--wrong); }
