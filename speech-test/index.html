@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speech Test</title>
+<style>
+  :root { --bg:#111; --fg:#eee; --dim:#888; --acc:#4ea1ff; --ok:#3c3; --bad:#e44; --card:#1d1d1d; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:16px/1.4 system-ui, sans-serif; }
+  h1 { font-size:20px; margin:0 0 12px; }
+  h2 { font-size:16px; margin:20px 0 8px; color:var(--dim); text-transform:uppercase; letter-spacing:.05em; }
+  label { display:block; margin:10px 0 4px; color:var(--dim); font-size:14px; }
+  select, textarea, button { width:100%; font:inherit; color:var(--fg); background:var(--card); border:1px solid #333; border-radius:8px; padding:12px; }
+  button { min-height:52px; margin:6px 0; font-weight:600; }
+  button.primary { background:var(--acc); color:#000; border:none; }
+  .row { display:flex; gap:8px; } .row button { flex:1; }
+  #words { background:var(--card); border-radius:8px; padding:14px; min-height:120px; font-size:20px; line-height:1.5; }
+  #words span { color:#444; transition:color .1s; } #words span.on { color:var(--fg); } #words span.cur { color:var(--acc); }
+  #status { margin:8px 0; font-weight:600; }
+  #log, #report { font:12px/1.35 ui-monospace, monospace; white-space:pre-wrap; background:#000; border-radius:8px; padding:10px; max-height:260px; overflow:auto; }
+  #report { width:100%; height:220px; max-height:none; border:1px solid #333; color:var(--fg); }
+  .pass { color:var(--ok); } .fail { color:var(--bad); }
+</style>
+</head>
+<body>
+<h1>Speech Engine Test</h1>
+
+<label for="voice">Voice</label>
+<select id="voice"></select>
+<label for="rate">Rate: <span id="rateVal">1.0</span></label>
+<input id="rate" type="range" min="0.5" max="2" step="0.1" value="1" style="width:100%">
+
+<button id="runAll" class="primary">Run all tests (~2 min)</button>
+
+<div id="status">Idle</div>
+<div id="words"></div>
+
+<h2>Manual controls</h2>
+<label for="sample">Text</label>
+<select id="sample">
+  <option value="short">Short sentence</option>
+  <option value="tossup">Full tossup (long)</option>
+</select>
+<div class="row"><button id="speak">Speak</button><button id="pause">Pause</button></div>
+<div class="row"><button id="resume">Resume</button><button id="cancel">Cancel</button></div>
+
+<h2>Report (copy and send this back)</h2>
+<textarea id="report" readonly></textarea>
+<button id="copy">Copy report</button>
+
+<h2>Event log</h2>
+<div id="log"></div>
+
+<script>
+const SHORT = "The quick brown fox jumps over the lazy dog near the riverbank.";
+const TOSSUP = "This battle was fought at a narrow pass between the mountains and the sea. " +
+  "A local man named Ephialtes supposedly betrayed the defenders by revealing a mountain path. " +
+  "Before this battle, one side's leader was told that his men would fight in the shade because the enemy arrows would blot out the sun. " +
+  "For 10 points, name this 480 BC battle in which Leonidas and three hundred Spartans held off the Persian army of Xerxes.";
+
+const synth = window.speechSynthesis;
+const $ = id => document.getElementById(id);
+const t0 = performance.now();
+const ms = () => Math.round(performance.now() - t0);
+let voices = [];
+let current = null;          // keep a reference: Chrome can garbage-collect utterances and drop their events
+const reportLines = [];
+
+function log(msg, cls) {
+  const d = document.createElement('div');
+  d.textContent = `[${ms()}] ${msg}`;
+  if (cls) d.className = cls;
+  $('log').prepend(d);
+}
+function report(line) { reportLines.push(line); $('report').value = reportLines.join('\n'); }
+function status(s) { $('status').textContent = s; }
+const sleep = n => new Promise(r => setTimeout(r, n));
+
+// ---- word display ----
+function tokenize(text) {
+  const out = []; const re = /\S+/g; let m;
+  while ((m = re.exec(text))) out.push({ start: m.index, end: m.index + m[0].length, word: m[0] });
+  return out;
+}
+function renderWords(tokens) {
+  $('words').innerHTML = '';
+  tokens.forEach(t => { const s = document.createElement('span'); s.textContent = t.word + ' '; $('words').appendChild(s); });
+}
+function highlightAt(tokens, charIndex) {
+  let idx = tokens.findIndex(t => charIndex < t.end);
+  if (idx < 0) idx = tokens.length - 1;
+  [...$('words').children].forEach((s, i) => { s.className = i < idx ? 'on' : i === idx ? 'cur' : ''; });
+  return idx;
+}
+function revealAll() { [...$('words').children].forEach(s => s.className = 'on'); }
+
+// ---- voices ----
+function loadVoices() {
+  voices = synth.getVoices();
+  const sel = $('voice'); const prev = sel.value;
+  sel.innerHTML = '';
+  voices.forEach((v, i) => {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = `${v.name} (${v.lang})${v.localService ? ' [local]' : ' [network]'}${v.default ? ' *default' : ''}`;
+    sel.appendChild(o);
+  });
+  const def = voices.findIndex(v => v.default && v.lang.startsWith('en')) >= 0
+    ? voices.findIndex(v => v.default && v.lang.startsWith('en'))
+    : voices.findIndex(v => v.lang.startsWith('en'));
+  sel.value = prev !== '' && voices[prev] ? prev : Math.max(def, 0);
+  log(`voices loaded: ${voices.length}`);
+}
+synth.addEventListener?.('voiceschanged', loadVoices);
+loadVoices();
+
+$('rate').oninput = () => $('rateVal').textContent = Number($('rate').value).toFixed(1);
+
+// ---- core: speak one utterance and record everything ----
+function speak(text, { rate, onStart } = {}) {
+  return new Promise(resolve => {
+    const tokens = tokenize(text);
+    renderWords(tokens);
+    const u = new SpeechSynthesisUtterance(text);
+    const v = voices[$('voice').value];
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = rate ?? Number($('rate').value);
+    current = u;
+
+    const r = { text, words: tokens.length, rate: u.rate, start: null, end: null, error: null,
+                boundaries: [], wordBoundaries: 0, pauseEvents: 0, resumeEvents: 0, timedOut: false, t0: ms() };
+    let done = false;
+    const finish = () => { if (done) return; done = true; clearTimeout(watchdog); resolve(r); };
+
+    // Generous watchdog: ~150 wpm at rate 1, x3, plus 8s
+    const expectMs = tokens.length / (2.5 * u.rate) * 1000;
+    const watchdog = setTimeout(() => { r.timedOut = true; log('WATCHDOG: no end/error event', 'fail'); finish(); }, expectMs * 3 + 8000);
+
+    u.onstart = () => { r.start = ms(); log('start'); onStart?.(); };
+    u.onboundary = e => {
+      r.boundaries.push({ t: ms(), name: e.name, charIndex: e.charIndex, charLength: e.charLength, elapsed: e.elapsedTime });
+      if (e.name === 'word' || e.name === undefined) { r.wordBoundaries++; highlightAt(tokens, e.charIndex); }
+      log(`boundary ${e.name} charIndex=${e.charIndex} len=${e.charLength ?? '-'}`);
+    };
+    u.onpause = () => { r.pauseEvents++; log('pause event'); };
+    u.onresume = () => { r.resumeEvents++; log('resume event'); };
+    u.onend = () => { r.end = ms(); log('end', 'pass'); revealAll(); finish(); };
+    u.onerror = e => { r.error = e.error; r.end = ms(); log(`error: ${e.error}`, 'fail'); finish(); };
+
+    log(`speak (${tokens.length} words, rate ${u.rate})`);
+    synth.cancel();             // clear any stuck queue first
+    setTimeout(() => synth.speak(u), 50);
+  });
+}
+
+function summarize(name, r) {
+  const ok = !!(r.end && !r.error && !r.timedOut);
+  const latency = r.boundaries.length && r.start ? r.boundaries[0].t - r.start : null;
+  const dur = r.start && r.end ? r.end - r.start : null;
+  const charIdxs = r.boundaries.map(b => b.charIndex);
+  const monotonic = charIdxs.every((c, i) => i === 0 || c >= charIdxs[i - 1]);
+  report(`--- ${name} ---`);
+  report(`  words=${r.words} rate=${r.rate} start=${r.start ? 'yes' : 'NO'} end=${r.end && !r.error ? 'yes' : 'NO'} error=${r.error ?? 'none'} timedOut=${r.timedOut}`);
+  report(`  boundaryEvents=${r.boundaries.length} wordBoundaries=${r.wordBoundaries} names=${[...new Set(r.boundaries.map(b => b.name))].join(',') || 'none'}`);
+  report(`  firstBoundaryLatencyMs=${latency ?? '-'} durationMs=${dur ?? '-'} charIndexMonotonic=${monotonic} charLengthReported=${r.boundaries.some(b => b.charLength > 0)}`);
+  if (r.pauseEvents || r.resumeEvents) report(`  pauseEvents=${r.pauseEvents} resumeEvents=${r.resumeEvents}`);
+  return ok;
+}
+
+// ---- test suite ----
+async function runAll() {
+  $('runAll').disabled = true;
+  reportLines.length = 0;
+  const v = voices[$('voice').value];
+  report(`UA: ${navigator.userAgent}`);
+  report(`Voice: ${v ? `${v.name} | ${v.lang} | localService=${v.localService} | default=${v.default}` : 'none'}`);
+  report(`Voices available: ${voices.length} (local: ${voices.filter(x => x.localService).length})`);
+  report(`Online: ${navigator.onLine}  WakeLock API: ${'wakeLock' in navigator}`);
+
+  status('1/6 Short sentence at rate 1.0');
+  summarize('1. short, rate 1.0', await speak(SHORT, { rate: 1 }));
+  await sleep(800);
+
+  status('2/6 Full tossup at rate 1.0');
+  const r2 = await speak(TOSSUP, { rate: 1 });
+  summarize('2. long tossup, rate 1.0', r2);
+  if (r2.wordBoundaries) report(`  coverage: ${r2.wordBoundaries}/${r2.words} words got a boundary (${Math.round(100 * r2.wordBoundaries / r2.words)}%)`);
+  await sleep(800);
+
+  status('3/6 Short sentence at rate 1.6');
+  summarize('3. short, rate 1.6', await speak(SHORT, { rate: 1.6 }));
+  await sleep(800);
+
+  status('4/6 Cancel mid-speech (simulated buzz)');
+  let cancelAt = null;
+  const p4 = speak(TOSSUP, { rate: 1, onStart: () => setTimeout(() => { cancelAt = ms(); log('>> cancel()'); synth.cancel(); }, 2500) });
+  const r4 = await p4;
+  summarize('4. cancel after 2.5s', r4);
+  report(`  eventAfterCancelMs=${r4.end && cancelAt ? r4.end - cancelAt : '-'} speakingAfter=${synth.speaking} pendingAfter=${synth.pending}`);
+  await sleep(800);
+
+  status('5/6 Speak again right after cancel (recovery)');
+  summarize('5. speak after cancel', await speak(SHORT, { rate: 1 }));
+  await sleep(800);
+
+  status('6/6 Pause at 2s, resume at 4s');
+  const p6 = speak(TOSSUP, { rate: 1, onStart: () => {
+    setTimeout(() => { log('>> pause()'); synth.pause(); }, 2000);
+    setTimeout(() => { log(`>> resume() (paused=${synth.paused} speaking=${synth.speaking})`); synth.resume(); }, 4000);
+  }});
+  summarize('6. pause/resume', await p6);
+
+  report('--- done ---');
+  status('Done. Copy the report below.');
+  $('runAll').disabled = false;
+}
+
+$('runAll').onclick = runAll;
+$('speak').onclick = async () => { reportLines.length = 0; summarize('manual', await speak($('sample').value === 'short' ? SHORT : TOSSUP)); };
+$('pause').onclick = () => { log('>> pause()'); synth.pause(); };
+$('resume').onclick = () => { log('>> resume()'); synth.resume(); };
+$('cancel').onclick = () => { log('>> cancel()'); synth.cancel(); };
+
+$('copy').onclick = async () => {
+  const text = $('report').value;
+  try { await navigator.clipboard.writeText(text); status('Copied.'); }
+  catch { $('report').select(); document.execCommand('copy'); status('Copied (fallback). If not, long-press the box and select all.'); }
+};
+
+if (!('speechSynthesis' in window)) { status('speechSynthesis NOT supported in this browser'); $('runAll').disabled = true; }
+</script>
+</body>
+</html>
