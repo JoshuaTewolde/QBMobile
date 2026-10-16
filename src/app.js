@@ -246,6 +246,7 @@ function showAnswer() {
   $('answerNote').textContent = a.note ? `(${a.note})` : '';
   $('answerPanel').hidden = false;
   $('answerPanel').scrollIntoView({ block: 'nearest' });
+  speakAnswer(a.primary);
 
   if (q.buzzed) {
     $('gradeRow').hidden = false;
@@ -256,6 +257,13 @@ function showAnswer() {
     record('dead');
     setMain(nextLabel(), 'primary');
   }
+}
+
+// Read the main answer aloud (guides dropped, same as questions). Next, Back, or a new question cuts it off.
+function speakAnswer(primary) {
+  const s = store.settings();
+  if (!s.speakAnswer || !primary) return;
+  reader.start(prepareForSpeech(primary), { voice: settingsVoice(), rate: s.rate, onWord() {}, onEnd() {} });
 }
 
 function nextLabel() { return q.index + 1 >= q.packet.tossups.length ? 'Finish' : 'Next'; }
@@ -346,8 +354,10 @@ function renderSettings() {
   $('voiceSelect').innerHTML = voices.map(v =>
     `<option ${v.name === current?.name ? 'selected' : ''}>${esc(v.name)}</option>`).join('');
   $('rateInput').value = s.rate;
+  $('speakAnswerInput').checked = s.speakAnswer;
   $('rateLabel').textContent = Number(s.rate).toFixed(1) + '×';
 }
+$('speakAnswerInput').onchange = e => store.saveSettings({ speakAnswer: e.target.checked });
 $('voiceSelect').onchange = e => store.saveSettings({ voiceName: e.target.value });
 $('rateInput').oninput = e => {
   const rate = Number(e.target.value);

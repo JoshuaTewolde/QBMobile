@@ -4,7 +4,7 @@ const KEYS = {
   packets: 'qb.packets',     // [{ id, title, addedAt, tossups, bonuses, warnings }]
   progress: 'qb.progress',   // { packetId, positions }
   results: 'qb.results',     // [{ packetId, packetTitle, number, category, question, answer, outcome, buzzedEarly, at }]
-  settings: 'qb.settings',   // { voiceName, rate }
+  settings: 'qb.settings',   // { voiceName, rate, speakAnswer }
 };
 
 function read(key, fallback) {
@@ -39,6 +39,6 @@ export const store = {
   replaceLastResult(r) { const rs = read(KEYS.results, []); rs[rs.length - 1] = r; write(KEYS.results, rs); },
   resetResults() { write(KEYS.results, []); },
 
-  settings: () => ({ voiceName: null, rate: 1, ...read(KEYS.settings, {}) }),
+  settings: () => ({ voiceName: null, rate: 1, speakAnswer: true, ...read(KEYS.settings, {}) }),
   saveSettings(s) { write(KEYS.settings, { ...store.settings(), ...s }); },
 };

@@ -66,4 +66,6 @@ h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: v
 
 label { display: block; margin: 16px 0 6px; color: var(--dim); }
 select, input[type=range] { width: 100%; }
+label.check { display: flex; align-items: center; gap: 12px; color: var(--fg); min-height: 48px; }
+label.check input { width: 24px; height: 24px; }
 select { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
