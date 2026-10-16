@@ -1,0 +1,13 @@
+{
+  "name": "qbmobile",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "vendor": "node scripts/vendor.js",
+    "serve": "python -m http.server 8000 --bind 0.0.0.0"
+  },
+  "devDependencies": {
+    "pdfjs-dist": "^6.4.299"
+  }
+}
