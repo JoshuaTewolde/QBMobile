@@ -91,4 +91,8 @@ Samples are in `samples/` (2022 ACF Fall Packet K and Packet D, 20 tossups + 20 
 7. Optional: bonuses, shuffle, category filter.
 
 ## Current status
-Empty project folder with `samples/` containing two packet PDFs. Nothing implemented yet. Next step: the speech test page.
+**Speech test results (Android 10, Chrome 155, local "English United States" voice):** `boundary` events never fire; `end` fires reliably; `cancel()` fires `error: interrupted` within ~20 ms and leaves the engine clean; `pause()` stops speech and `resume()` never restarts it. So: word reveal is timed per word and re-synced at each sentence (one utterance per sentence), pause = cancel, resume = restart the current sentence. Unread words are hidden, not greyed. Exact word sync is low priority for me.
+
+Done: speech test page (`speech-test/`), parser + tests (`npm test`), question screen, scoring, persistence (localStorage), upload with parse check, missed-question review, settings. Dev server: `npm run serve` (port 8000 on the LAN).
+
+Next: PWA setup (manifest, icons, service worker, wake lock needs HTTPS), then hosting and the airplane-mode check.
